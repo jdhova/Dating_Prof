@@ -55,3 +55,33 @@ Bio: Weekends are for road trips.
 - Public Page:
 	- Submit profile manually.
 	- View only match names and photos (no age, city, likes, bio, or score).
+
+## 6) Deploy On Streamlit Community Cloud
+
+### A) Push project to GitHub
+
+```bash
+git init
+git branch -M main
+git remote add origin https://github.com/jdhova/Dating_Prof.git
+git add .
+git commit -m "Deploy-ready MVP"
+git push -u origin main
+```
+
+### B) Deploy from Streamlit Cloud
+
+1. Go to https://share.streamlit.io
+2. Sign in with GitHub.
+3. Click **Create app**.
+4. Select:
+	- Repository: `jdhova/Dating_Prof`
+	- Branch: `main`
+	- Main file path: `app.py`
+5. Click **Deploy**.
+
+### C) Notes
+
+- `requirements.txt` is used for package install.
+- `runtime.txt` pins Python version for cloud runtime.
+- No API key is required for this MVP.

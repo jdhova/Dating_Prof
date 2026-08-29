@@ -372,9 +372,14 @@ def main() -> None:
     reset_profiles_in_memory(base_profiles, source_key)
     all_profiles = combined_profiles()
 
-    admin_tab, public_tab = st.tabs(["Admin Portal", "Public Page"])
+    st.markdown("### MVP Role Switch")
+    view_mode = st.radio(
+        "Choose portal to demo",
+        ["Admin View", "Public View"],
+        horizontal=True,
+    )
 
-    with admin_tab:
+    if view_mode == "Admin View":
         st.subheader("Admin Portal")
         st.caption("Full access: profile details, uploaded data, public submissions, and full match insights.")
 
@@ -462,7 +467,7 @@ def main() -> None:
                 unsafe_allow_html=True,
             )
 
-    with public_tab:
+    else:
         st.subheader("Public Page")
         st.caption("Privacy mode: only match names and photos are shown publicly.")
 
