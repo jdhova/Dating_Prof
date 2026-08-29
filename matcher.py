@@ -8,6 +8,7 @@ from typing import Iterable
 class Profile:
     name: str
     age: int | None
+    gender: str
     city: str
     likes: set[str]
     bio: str = ""

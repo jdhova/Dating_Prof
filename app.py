@@ -10,7 +10,7 @@ from docx import Document
 from matcher import Profile, parse_likes, top_matches
 
 
-EXPECTED_COLUMNS = ["name", "likes", "age", "city", "bio", "photo_url"]
+EXPECTED_COLUMNS = ["name", "gender", "likes", "age", "city", "bio", "photo_url"]
 BASE_DIR = Path(__file__).resolve().parent
 DUMMY_DATA_PATH = BASE_DIR / "data" / "dummy_profiles.csv"
 
@@ -192,9 +192,39 @@ def combined_profiles() -> list[Profile]:
     return list(st.session_state.get("base_profiles", [])) + list(st.session_state.get("public_submissions", []))
 
 
+def normalize_gender(value: str | None) -> str:
+    raw = (value or "").strip().lower()
+    if raw in {"male", "m"}:
+        return "male"
+    if raw in {"female", "f"}:
+        return "female"
+    return ""
+
+
+def opposite_gender(value: str) -> str:
+    if value == "male":
+        return "female"
+    if value == "female":
+        return "male"
+    return ""
+
+
+def opposite_gender_pool(selected: Profile, profiles: list[Profile]) -> list[Profile]:
+    target_gender = opposite_gender(normalize_gender(getattr(selected, "gender", "")))
+    if not target_gender:
+        return []
+    selected_name = selected.name.strip().lower()
+    return [
+        p
+        for p in profiles
+        if p.name.strip().lower() != selected_name and normalize_gender(getattr(p, "gender", "")) == target_gender
+    ]
+
+
 def profile_to_dict(profile: Profile) -> dict:
     return {
         "name": profile.name,
+        "gender": normalize_gender(getattr(profile, "gender", "")) or "-",
         "age": profile.age,
         "city": profile.city,
         "likes": ", ".join(sorted(profile.likes)),
@@ -206,6 +236,7 @@ def profile_to_dict(profile: Profile) -> dict:
 def profile_table_row(profile: Profile) -> dict:
     return {
         "name": profile.name,
+        "gender": normalize_gender(getattr(profile, "gender", "")) or "-",
         "age": profile.age,
         "city": profile.city,
         "likes": ", ".join(sorted(profile.likes)),
@@ -253,7 +284,8 @@ def render_profile_gallery(profiles: list[Profile], *, columns_count: int = 4) -
             st.markdown(f'<div class="gallery-title">{profile.name}</div>', unsafe_allow_html=True)
             age_label = str(profile.age) if profile.age is not None else "-"
             city_label = profile.city or "-"
-            st.markdown(f'<div class="gallery-meta">Age {age_label} | {city_label}</div>', unsafe_allow_html=True)
+            gender_label = normalize_gender(getattr(profile, "gender", "")) or "-"
+            st.markdown(f'<div class="gallery-meta">{gender_label.title()} | Age {age_label} | {city_label}</div>', unsafe_allow_html=True)
             bio = (profile.bio or "No bio added.").strip()
             if len(bio) > 80:
                 bio = f"{bio[:77]}..."
@@ -264,6 +296,7 @@ def render_profile_gallery(profiles: list[Profile], *, columns_count: int = 4) -
 def make_profile(
     name: str,
     age: int | None,
+    gender: str,
     city: str,
     likes: set[str],
     bio: str = "",
@@ -273,6 +306,7 @@ def make_profile(
         return Profile(
             name=name,
             age=age,
+            gender=normalize_gender(gender),
             city=city,
             likes=likes,
             bio=bio,
@@ -282,6 +316,7 @@ def make_profile(
         profile = Profile(
             name=name,
             age=age,
+            gender=normalize_gender(gender),
             city=city,
             likes=likes,
             bio=bio,
@@ -322,6 +357,11 @@ def parse_profiles_from_dataframe(df: pd.DataFrame) -> list[Profile]:
         if pd.notna(raw_city):
             city = str(raw_city).strip()
 
+        gender = ""
+        raw_gender = row.get("gender")
+        if pd.notna(raw_gender):
+            gender = str(raw_gender).strip()
+
         bio = ""
         raw_bio = row.get("bio")
         if pd.notna(raw_bio):
@@ -338,6 +378,7 @@ def parse_profiles_from_dataframe(df: pd.DataFrame) -> list[Profile]:
             make_profile(
                 name=name,
                 age=age,
+                gender=gender,
                 city=city,
                 likes=likes,
                 bio=bio,
@@ -385,6 +426,7 @@ def parse_profiles_from_docx(file_bytes: bytes) -> list[Profile]:
             make_profile(
                 name=current.get("name", "").strip(),
                 age=age,
+                gender=current.get("gender", "").strip(),
                 city=current.get("city", "").strip(),
                 likes=parse_likes(current.get("likes", "")),
                 bio=current.get("bio", "").strip(),
@@ -554,7 +596,7 @@ def main() -> None:
                 f"""
                 <div class="profile-card">
                     <h3 style="margin-top: 0;">{selected.name}</h3>
-                    <p style="margin: 0 0 8px 0;"><strong>Age:</strong> {selected.age if selected.age is not None else '-'} | <strong>City:</strong> {selected.city or '-'}</p>
+                    <p style="margin: 0 0 8px 0;"><strong>Gender:</strong> {normalize_gender(getattr(selected, 'gender', '')) or '-'} | <strong>Age:</strong> {selected.age if selected.age is not None else '-'} | <strong>City:</strong> {selected.city or '-'}</p>
                     <p style="margin: 0 0 8px 0;"><strong>Bio:</strong> {selected.bio or 'No bio added.'}</p>
                     <div>{profile_likes_html(selected.likes)}</div>
                 </div>
@@ -564,8 +606,16 @@ def main() -> None:
         with photo_col:
             st.image(profile_photo(selected), use_container_width=True)
 
-        admin_results = top_matches(selected, all_profiles, limit=top_k)
+        admin_candidates = opposite_gender_pool(selected, all_profiles)
+        admin_results = top_matches(selected, admin_candidates, limit=top_k)
         st.markdown(f"#### Top {top_k} Matches (Admin Full View)")
+        selected_gender = normalize_gender(getattr(selected, "gender", ""))
+        if selected_gender not in {"male", "female"}:
+            st.info("Set selected profile gender to Male or Female to compute matches.")
+            st.stop()
+        if not admin_candidates:
+            st.info(f"No {opposite_gender(selected_gender).title()} profiles available for matching yet.")
+            st.stop()
         for rank, (profile, score, common_likes) in enumerate(admin_results, start=1):
             st.markdown(
                 f"""
@@ -575,7 +625,7 @@ def main() -> None:
                             <img src="{profile_photo(profile)}" alt="{profile.name}" style="width: 78px; height: 78px; object-fit: cover; border-radius: 10px; border: 1px solid #f2d4c6;" />
                             <div>
                                 <strong>#{rank} {profile.name}</strong><br/>
-                                <span>Age: {profile.age if profile.age is not None else '-'} | City: {profile.city or '-'}</span><br/>
+                                <span>{normalize_gender(getattr(profile, 'gender', '')).title()} | Age: {profile.age if profile.age is not None else '-'} | City: {profile.city or '-'}</span><br/>
                                 <span>Bio: {profile.bio or '-'}</span>
                             </div>
                         </div>
@@ -595,6 +645,7 @@ def main() -> None:
             public_left, public_right = st.columns(2)
             with public_left:
                 public_name = st.text_input("Your name")
+                public_gender = st.selectbox("Your gender", ["Female", "Male"])
                 public_age = st.number_input("Your age", min_value=18, max_value=100, value=28, step=1)
                 public_city = st.text_input("Your city")
             with public_right:
@@ -617,6 +668,7 @@ def main() -> None:
                 new_public = make_profile(
                     name=clean_name,
                     age=int(public_age),
+                    gender=public_gender,
                     city=public_city.strip(),
                     likes=likes,
                     bio=public_bio.strip(),
@@ -647,7 +699,17 @@ def main() -> None:
             st.warning("Selected public profile not found.")
             st.stop()
 
-        public_results = top_matches(selected_public, all_profiles, limit=top_k)
+        public_gender = normalize_gender(getattr(selected_public, "gender", ""))
+        if public_gender not in {"male", "female"}:
+            st.info("Set your gender to Male or Female to compute matches.")
+            st.stop()
+
+        public_candidates = opposite_gender_pool(selected_public, all_profiles)
+        if not public_candidates:
+            st.info(f"No {opposite_gender(public_gender).title()} profiles available for matching yet.")
+            st.stop()
+
+        public_results = top_matches(selected_public, public_candidates, limit=top_k)
         st.markdown(f"#### Top {top_k} Public Matches")
         st.caption("Only names, photos, and compatibility score are visible on this page.")
 
