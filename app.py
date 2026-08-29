@@ -155,12 +155,7 @@ def profile_likes_html(likes: set[str]) -> str:
     return "".join(f'<span class="stat-pill">{item}</span>' for item in sorted(likes))
 
 
-def pick_profile_by_name(profiles: list[Profile], typed_name: str, selected_name: str) -> Profile | None:
-    typed = typed_name.strip().lower()
-    if typed:
-        for profile in profiles:
-            if profile.name.strip().lower() == typed:
-                return profile
+def pick_profile_by_name(profiles: list[Profile], selected_name: str) -> Profile | None:
     for profile in profiles:
         if profile.name == selected_name:
             return profile
@@ -527,9 +522,26 @@ def main() -> None:
             st.stop()
 
         names = sorted([p.name for p in all_profiles])
-        typed_name = st.text_input("Admin: type profile name (exact)", placeholder="Example: Ava")
-        selected_name = st.selectbox("Admin: or pick profile", names)
-        selected = pick_profile_by_name(all_profiles, typed_name, selected_name)
+        st.markdown("### Select Profile Name")
+
+        if "admin_selected_name" not in st.session_state or st.session_state["admin_selected_name"] not in names:
+            st.session_state["admin_selected_name"] = names[0]
+
+        current_idx = names.index(st.session_state["admin_selected_name"])
+        nav_left, nav_mid, nav_right = st.columns([1, 2, 1])
+        with nav_left:
+            if st.button("Previous Profile", use_container_width=True):
+                st.session_state["admin_selected_name"] = names[(current_idx - 1) % len(names)]
+                st.rerun()
+        with nav_mid:
+            st.caption(f"Profile {current_idx + 1} of {len(names)}")
+        with nav_right:
+            if st.button("Next Profile", use_container_width=True):
+                st.session_state["admin_selected_name"] = names[(current_idx + 1) % len(names)]
+                st.rerun()
+
+        selected_name = st.selectbox("Choose a profile", names, key="admin_selected_name")
+        selected = pick_profile_by_name(all_profiles, selected_name)
 
         if selected is None:
             st.warning("Selected profile not found.")
