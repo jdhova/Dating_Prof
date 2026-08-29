@@ -608,7 +608,8 @@ def main() -> None:
 
         admin_candidates = opposite_gender_pool(selected, all_profiles)
         admin_results = top_matches(selected, admin_candidates, limit=top_k)
-        st.markdown(f"#### Top {top_k} Matches (Admin Full View)")
+        st.markdown(f"#### Top {top_k} Matches for {selected.name} (Admin Full View)")
+        st.caption("Ranked by common interests first, then overall compatibility.")
         selected_gender = normalize_gender(getattr(selected, "gender", ""))
         if selected_gender not in {"male", "female"}:
             st.info("Set selected profile gender to Male or Female to compute matches.")
@@ -710,7 +711,7 @@ def main() -> None:
             st.stop()
 
         public_results = top_matches(selected_public, public_candidates, limit=top_k)
-        st.markdown(f"#### Top {top_k} Public Matches")
+        st.markdown(f"#### Top {top_k} Public Matches for {selected_public.name}")
         st.caption("Only names, photos, and compatibility score are visible on this page.")
 
         if not public_results:

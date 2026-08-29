@@ -1,14 +1,14 @@
 const DEMO_PROFILES = [
-  { name: "Ava", age: 29, city: "London", likes: "hiking,jazz,travel,coffee", bio: "Loves weekend trips and live music.", photo_url: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80" },
-  { name: "Noah", age: 31, city: "London", likes: "coffee,running,movies,travel", bio: "Early riser and marathon fan.", photo_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80" },
-  { name: "Mia", age: 27, city: "Manchester", likes: "yoga,books,travel,cooking", bio: "Bookstore dates are my favorite.", photo_url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80" },
-  { name: "Ethan", age: 30, city: "London", likes: "hiking,gaming,coffee,photography", bio: "Always planning the next photo walk.", photo_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80" },
-  { name: "Sophia", age: 28, city: "Bristol", likes: "music,cooking,travel,art", bio: "Creative soul with a foodie side.", photo_url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80" },
-  { name: "Liam", age: 32, city: "Leeds", likes: "football,movies,coffee,travel", bio: "Casual and easy-going.", photo_url: "https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?auto=format&fit=crop&w=800&q=80" },
-  { name: "Isla", age: 26, city: "London", likes: "hiking,coffee,yoga,art", bio: "Museum days and long walks.", photo_url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80" },
-  { name: "Lucas", age: 29, city: "Manchester", likes: "gaming,tech,travel,coffee", bio: "Builder by day, gamer by night.", photo_url: "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=800&q=80" },
-  { name: "Amelia", age: 31, city: "London", likes: "jazz,books,cooking,coffee", bio: "Good conversation over espresso.", photo_url: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80" },
-  { name: "Oliver", age: 28, city: "Bristol", likes: "hiking,travel,movies,music", bio: "Open to new experiences.", photo_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=800&q=80" }
+  { name: "Ava", gender: "female", age: 29, city: "London", likes: "hiking,jazz,travel,coffee", bio: "Loves weekend trips and live music.", photo_url: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=800&q=80" },
+  { name: "Noah", gender: "male", age: 31, city: "London", likes: "coffee,running,movies,travel", bio: "Early riser and marathon fan.", photo_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80" },
+  { name: "Mia", gender: "female", age: 27, city: "Manchester", likes: "yoga,books,travel,cooking", bio: "Bookstore dates are my favorite.", photo_url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80" },
+  { name: "Ethan", gender: "male", age: 30, city: "London", likes: "hiking,gaming,coffee,photography", bio: "Always planning the next photo walk.", photo_url: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80" },
+  { name: "Sophia", gender: "female", age: 28, city: "Bristol", likes: "music,cooking,travel,art", bio: "Creative soul with a foodie side.", photo_url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80" },
+  { name: "Liam", gender: "male", age: 32, city: "Leeds", likes: "football,movies,coffee,travel", bio: "Casual and easy-going.", photo_url: "https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?auto=format&fit=crop&w=800&q=80" },
+  { name: "Isla", gender: "female", age: 26, city: "London", likes: "hiking,coffee,yoga,art", bio: "Museum days and long walks.", photo_url: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=800&q=80" },
+  { name: "Lucas", gender: "male", age: 29, city: "Manchester", likes: "gaming,tech,travel,coffee", bio: "Builder by day, gamer by night.", photo_url: "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=800&q=80" },
+  { name: "Amelia", gender: "female", age: 31, city: "London", likes: "jazz,books,cooking,coffee", bio: "Good conversation over espresso.", photo_url: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80" },
+  { name: "Oliver", gender: "male", age: 28, city: "Bristol", likes: "hiking,travel,movies,music", bio: "Open to new experiences.", photo_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=800&q=80" }
 ];
 
 const state = {
@@ -34,6 +34,7 @@ function normalizeProfiles(rows) {
   return rows
     .map((r) => ({
       name: String(r.name || "").trim(),
+      gender: normalizeGender(r.gender),
       age: Number.isFinite(Number(r.age)) ? Number(r.age) : null,
       city: String(r.city || "").trim(),
       likes: parseLikes(r.likes),
@@ -45,6 +46,27 @@ function normalizeProfiles(rows) {
 
 function allProfiles() {
   return [...state.baseProfiles, ...state.publicSubmissions];
+}
+
+function normalizeGender(value) {
+  const raw = String(value || "").trim().toLowerCase();
+  if (raw === "male" || raw === "m") return "male";
+  if (raw === "female" || raw === "f") return "female";
+  return "";
+}
+
+function oppositeGender(value) {
+  if (value === "male") return "female";
+  if (value === "female") return "male";
+  return "";
+}
+
+function oppositeGenderPool(selected, profiles) {
+  const target = oppositeGender(normalizeGender(selected.gender));
+  if (!target) return [];
+  return profiles.filter(
+    (p) => p.name.toLowerCase() !== selected.name.toLowerCase() && normalizeGender(p.gender) === target
+  );
 }
 
 function escapeHtml(value) {
@@ -93,7 +115,12 @@ function topMatches(selected, profiles, limit) {
       score: score(selected, p),
       common: selected.likes.filter((x) => p.likes.includes(x)),
     }))
-    .sort((a, b) => b.score - a.score)
+    .sort((a, b) => {
+      if (b.common.length !== a.common.length) {
+        return b.common.length - a.common.length;
+      }
+      return b.score - a.score;
+    })
     .slice(0, limit);
 }
 
@@ -102,12 +129,15 @@ function renderTable(table, rows) {
     table.innerHTML = "<tr><td>No data yet.</td></tr>";
     return;
   }
-  const headers = ["name", "age", "city", "likes", "bio", "photo_url"];
+  const headers = ["name", "gender", "age", "city", "likes", "bio", "photo_url"];
   const head = `<tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr>`;
   const body = rows
     .map((r) => `<tr>${headers.map((h) => {
       if (h === "likes") {
         return `<td>${escapeHtml(r.likes.join(", "))}</td>`;
+      }
+      if (h === "gender") {
+        return `<td>${escapeHtml((r.gender || "-").toString())}</td>`;
       }
       if (h === "photo_url") {
         const photo = photoOrFallback(r.photo_url);
@@ -122,21 +152,24 @@ function renderTable(table, rows) {
 function syncSelectors() {
   const names = allProfiles().map((p) => p.name).sort();
   const adminSelect = document.getElementById("adminProfileSelect");
+  const prevAdminValue = adminSelect.value;
   adminSelect.innerHTML = names.map((n) => `<option>${n}</option>`).join("");
+  if (prevAdminValue && names.includes(prevAdminValue)) {
+    adminSelect.value = prevAdminValue;
+  }
 
   const publicNames = state.publicSubmissions.map((p) => p.name).sort();
   const publicSelect = document.getElementById("publicProfileSelect");
+  const prevPublicValue = publicSelect.value;
   publicSelect.innerHTML = publicNames.length ? publicNames.map((n) => `<option>${n}</option>`).join("") : "<option>No submissions yet</option>";
+  if (prevPublicValue && publicNames.includes(prevPublicValue)) {
+    publicSelect.value = prevPublicValue;
+  }
 }
 
 function getSelectedAdminProfile() {
-  const typed = document.getElementById("adminTypedName").value.trim().toLowerCase();
   const selected = document.getElementById("adminProfileSelect").value;
   const profiles = allProfiles();
-  if (typed) {
-    const found = profiles.find((p) => p.name.toLowerCase() === typed);
-    if (found) return found;
-  }
   return profiles.find((p) => p.name === selected) || profiles[0];
 }
 
@@ -154,14 +187,30 @@ function renderAdmin() {
   const selectedPhoto = photoOrFallback(selected.photo_url);
   selectedCard.innerHTML = `
     <h3>${escapeHtml(selected.name)}</h3>
-    <p>Age: ${escapeHtml(selected.age ?? "-")} | City: ${escapeHtml(selected.city || "-")}</p>
+    <p>Gender: ${escapeHtml(selected.gender || "-")} | Age: ${escapeHtml(selected.age ?? "-")} | City: ${escapeHtml(selected.city || "-")}</p>
     <p>Bio: ${escapeHtml(selected.bio || "No bio")}</p>
     <p>Likes: ${escapeHtml(selected.likes.join(", ") || "-")}</p>
     <img src="${escapeHtml(selectedPhoto)}" alt="${escapeHtml(selected.name)}" />
   `;
 
-  const matches = topMatches(selected, profiles, state.topK);
-  document.getElementById("adminMatchesTitle").textContent = `Top ${state.topK} Matches`;
+  const selectedGender = normalizeGender(selected.gender);
+  const adminHint = document.getElementById("adminMatchHint");
+  if (!selectedGender) {
+    adminHint.textContent = "Set gender to male/female to compute matches.";
+    document.getElementById("adminMatches").innerHTML = "<p class='muted'>No matches for this profile yet.</p>";
+    return;
+  }
+
+  const candidates = oppositeGenderPool(selected, profiles);
+  if (!candidates.length) {
+    adminHint.textContent = `No ${oppositeGender(selectedGender)} profiles available for matching.`;
+    document.getElementById("adminMatches").innerHTML = "<p class='muted'>No opposite-gender matches available.</p>";
+    return;
+  }
+
+  const matches = topMatches(selected, candidates, state.topK);
+  document.getElementById("adminMatchesTitle").textContent = `Top ${state.topK} Matches for ${selected.name}`;
+  document.getElementById("adminMatchHint").textContent = "Opposite gender only. Ranked by common interests first, then overall compatibility.";
   document.getElementById("adminMatches").innerHTML = matches
     .map((m, i) => `
       <div class="match-item">
@@ -169,7 +218,7 @@ function renderAdmin() {
           <img src="${escapeHtml(photoOrFallback(m.profile.photo_url))}" alt="${escapeHtml(m.profile.name)}" />
           <div>
             <strong>#${i + 1} ${escapeHtml(m.profile.name)}</strong><br>
-            Age: ${escapeHtml(m.profile.age ?? "-")} | City: ${escapeHtml(m.profile.city || "-")}<br>
+            Gender: ${escapeHtml(m.profile.gender || "-")} | Age: ${escapeHtml(m.profile.age ?? "-")} | City: ${escapeHtml(m.profile.city || "-")}<br>
             Bio: ${escapeHtml(m.profile.bio || "-")}<br>
             Score: ${m.score.toFixed(3)}<br>
             Common likes: ${escapeHtml(m.common.join(", ") || "None")}
@@ -184,14 +233,26 @@ function renderPublic() {
   const publicSelect = document.getElementById("publicProfileSelect");
   const selectedName = publicSelect.value;
   const selected = state.publicSubmissions.find((p) => p.name === selectedName);
-  document.getElementById("publicMatchesTitle").textContent = `Top ${state.topK} Public Matches`;
+  document.getElementById("publicMatchesTitle").textContent = `Top ${state.topK} Public Matches${selected ? ` for ${selected.name}` : ""}`;
 
   if (!selected) {
     document.getElementById("publicMatches").innerHTML = "<p class='muted'>Submit a profile to see matches.</p>";
     return;
   }
 
-  const matches = topMatches(selected, allProfiles(), state.topK);
+  const selectedGender = normalizeGender(selected.gender);
+  if (!selectedGender) {
+    document.getElementById("publicMatches").innerHTML = "<p class='muted'>Set your gender to male/female to see matches.</p>";
+    return;
+  }
+
+  const candidates = oppositeGenderPool(selected, allProfiles());
+  if (!candidates.length) {
+    document.getElementById("publicMatches").innerHTML = `<p class='muted'>No ${escapeHtml(oppositeGender(selectedGender))} profiles available yet.</p>`;
+    return;
+  }
+
+  const matches = topMatches(selected, candidates, state.topK);
   document.getElementById("publicMatches").innerHTML = matches
     .map((m, i) => {
       const photo = m.profile.photo_url || "https://placehold.co/320x220?text=No+Photo";
@@ -296,7 +357,6 @@ function bindEvents() {
     renderPublic();
   });
 
-  document.getElementById("adminTypedName").addEventListener("input", renderAdmin);
   document.getElementById("adminProfileSelect").addEventListener("change", renderAdmin);
   document.getElementById("publicProfileSelect").addEventListener("change", renderPublic);
 
@@ -341,6 +401,7 @@ function bindEvents() {
 
     state.publicSubmissions.push({
       name,
+      gender: normalizeGender(fd.get("gender")),
       age: Number(fd.get("age")) || null,
       city: String(fd.get("city") || "").trim(),
       likes,

@@ -60,5 +60,6 @@ def top_matches(selected: Profile, profiles: Iterable[Profile], limit: int = 5) 
         common_likes = selected.likes & profile.likes
         scored.append((profile, score, common_likes))
 
-    scored.sort(key=lambda row: row[1], reverse=True)
+    # Prioritize common interests first, then fallback to the blended score.
+    scored.sort(key=lambda row: (len(row[2]), row[1]), reverse=True)
     return scored[:limit]
