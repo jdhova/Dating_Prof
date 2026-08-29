@@ -14,12 +14,37 @@
       <p>Admin and Public demo for profile matching</p>
     </header>
 
-    <section class="panel role-switch">
+    <section id="loginPanel" class="panel">
+      <h2>Demo Sign In</h2>
+      <p class="muted">Use demo accounts until real auth is implemented.</p>
+      <div class="grid two">
+        <div class="card">
+          <h3>Sign In</h3>
+          <label for="loginUsername">Username</label>
+          <input id="loginUsername" type="text" placeholder="admin_demo or public_demo" />
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" placeholder="Enter demo password" />
+          <button id="loginBtn" type="button">Sign In</button>
+          <p id="loginMsg" class="muted"></p>
+        </div>
+        <div class="card">
+          <h3>Demo Accounts</h3>
+          <p><strong>Admin:</strong> admin_demo / admin123</p>
+          <p><strong>Public:</strong> public_demo / public123</p>
+          <button id="loginAsAdmin" type="button">Use Admin Demo</button>
+          <button id="loginAsPublic" type="button" class="secondary">Use Public Demo</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="roleSwitchPanel" class="panel role-switch hidden">
       <h2>MVP Role Switch</h2>
+      <p id="activeRoleText" class="muted"></p>
       <div class="toggle-row">
         <label><input type="radio" name="viewMode" value="admin" checked /> Admin View</label>
         <label><input type="radio" name="viewMode" value="public" /> Public View</label>
       </div>
+      <button id="logoutBtn" type="button" class="secondary">Log Out</button>
     </section>
 
     <section id="adminView" class="panel">

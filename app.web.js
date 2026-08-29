@@ -15,6 +15,12 @@ const state = {
   baseProfiles: normalizeProfiles(DEMO_PROFILES),
   publicSubmissions: [],
   topK: 5,
+  sessionRole: null,
+};
+
+const DEMO_ACCOUNTS = {
+  admin_demo: { password: "admin123", role: "admin" },
+  public_demo: { password: "public123", role: "public" },
 };
 
 function parseLikes(input) {
@@ -39,6 +45,19 @@ function normalizeProfiles(rows) {
 
 function allProfiles() {
   return [...state.baseProfiles, ...state.publicSubmissions];
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function photoOrFallback(url) {
+  return url || "https://placehold.co/320x220?text=No+Photo";
 }
 
 function ageScore(a, b, maxGap = 15) {
@@ -86,7 +105,16 @@ function renderTable(table, rows) {
   const headers = ["name", "age", "city", "likes", "bio", "photo_url"];
   const head = `<tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr>`;
   const body = rows
-    .map((r) => `<tr>${headers.map((h) => `<td>${h === "likes" ? r.likes.join(", ") : (r[h] ?? "")}</td>`).join("")}</tr>`)
+    .map((r) => `<tr>${headers.map((h) => {
+      if (h === "likes") {
+        return `<td>${escapeHtml(r.likes.join(", "))}</td>`;
+      }
+      if (h === "photo_url") {
+        const photo = photoOrFallback(r.photo_url);
+        return `<td><img class="photo-mini" src="${escapeHtml(photo)}" alt="${escapeHtml(r.name)}" /></td>`;
+      }
+      return `<td>${escapeHtml(r[h] ?? "")}</td>`;
+    }).join("")}</tr>`)
     .join("");
   table.innerHTML = head + body;
 }
@@ -123,11 +151,13 @@ function renderAdmin() {
   if (!profiles.length) return;
   const selected = getSelectedAdminProfile();
   const selectedCard = document.getElementById("selectedProfileCard");
+  const selectedPhoto = photoOrFallback(selected.photo_url);
   selectedCard.innerHTML = `
-    <h3>${selected.name}</h3>
-    <p>Age: ${selected.age ?? "-"} | City: ${selected.city || "-"}</p>
-    <p>Bio: ${selected.bio || "No bio"}</p>
-    <p>Likes: ${selected.likes.join(", ") || "-"}</p>
+    <h3>${escapeHtml(selected.name)}</h3>
+    <p>Age: ${escapeHtml(selected.age ?? "-")} | City: ${escapeHtml(selected.city || "-")}</p>
+    <p>Bio: ${escapeHtml(selected.bio || "No bio")}</p>
+    <p>Likes: ${escapeHtml(selected.likes.join(", ") || "-")}</p>
+    <img src="${escapeHtml(selectedPhoto)}" alt="${escapeHtml(selected.name)}" />
   `;
 
   const matches = topMatches(selected, profiles, state.topK);
@@ -135,11 +165,16 @@ function renderAdmin() {
   document.getElementById("adminMatches").innerHTML = matches
     .map((m, i) => `
       <div class="match-item">
-        <strong>#${i + 1} ${m.profile.name}</strong><br>
-        Age: ${m.profile.age ?? "-"} | City: ${m.profile.city || "-"}<br>
-        Bio: ${m.profile.bio || "-"}<br>
-        Score: ${m.score.toFixed(3)}<br>
-        Common likes: ${m.common.join(", ") || "None"}
+        <div class="match-head">
+          <img src="${escapeHtml(photoOrFallback(m.profile.photo_url))}" alt="${escapeHtml(m.profile.name)}" />
+          <div>
+            <strong>#${i + 1} ${escapeHtml(m.profile.name)}</strong><br>
+            Age: ${escapeHtml(m.profile.age ?? "-")} | City: ${escapeHtml(m.profile.city || "-")}<br>
+            Bio: ${escapeHtml(m.profile.bio || "-")}<br>
+            Score: ${m.score.toFixed(3)}<br>
+            Common likes: ${escapeHtml(m.common.join(", ") || "None")}
+          </div>
+        </div>
       </div>
     `)
     .join("");
@@ -162,17 +197,90 @@ function renderPublic() {
       const photo = m.profile.photo_url || "https://placehold.co/320x220?text=No+Photo";
       return `
       <div class="public-item">
-        <img src="${photo}" alt="${m.profile.name}" />
-        <p><strong>#${i + 1} ${m.profile.name}</strong></p>
+        <img src="${escapeHtml(photo)}" alt="${escapeHtml(m.profile.name)}" />
+        <p><strong>#${i + 1} ${escapeHtml(m.profile.name)}</strong></p>
       </div>
     `;
     })
     .join("");
 }
 
+function setViewMode(mode) {
+  const isAdmin = mode === "admin";
+  document.querySelector("input[name='viewMode'][value='admin']").checked = isAdmin;
+  document.querySelector("input[name='viewMode'][value='public']").checked = !isAdmin;
+  document.getElementById("adminView").classList.toggle("hidden", !isAdmin);
+  document.getElementById("publicView").classList.toggle("hidden", isAdmin);
+}
+
+function applySessionRole() {
+  const rolePanel = document.getElementById("roleSwitchPanel");
+  const loginPanel = document.getElementById("loginPanel");
+  const roleText = document.getElementById("activeRoleText");
+
+  if (!state.sessionRole) {
+    loginPanel.classList.remove("hidden");
+    rolePanel.classList.add("hidden");
+    document.getElementById("adminView").classList.add("hidden");
+    document.getElementById("publicView").classList.add("hidden");
+    return;
+  }
+
+  loginPanel.classList.add("hidden");
+  rolePanel.classList.remove("hidden");
+  roleText.textContent = `Signed in as ${state.sessionRole} demo`;
+
+  if (state.sessionRole === "admin") {
+    setViewMode("admin");
+  } else {
+    setViewMode("public");
+  }
+
+  renderAdmin();
+  renderPublic();
+}
+
+function signIn(username, password) {
+  const msg = document.getElementById("loginMsg");
+  const user = DEMO_ACCOUNTS[username];
+  if (!user || user.password !== password) {
+    msg.textContent = "Invalid demo credentials.";
+    return;
+  }
+  state.sessionRole = user.role;
+  msg.textContent = "";
+  applySessionRole();
+}
+
 function bindEvents() {
+  document.getElementById("loginBtn").addEventListener("click", () => {
+    const username = document.getElementById("loginUsername").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    signIn(username, password);
+  });
+
+  document.getElementById("loginAsAdmin").addEventListener("click", () => {
+    signIn("admin_demo", "admin123");
+  });
+
+  document.getElementById("loginAsPublic").addEventListener("click", () => {
+    signIn("public_demo", "public123");
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    state.sessionRole = null;
+    document.getElementById("loginUsername").value = "";
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("loginMsg").textContent = "";
+    applySessionRole();
+  });
+
   document.querySelectorAll("input[name='viewMode']").forEach((radio) => {
     radio.addEventListener("change", () => {
+      if (state.sessionRole !== "admin") {
+        setViewMode("public");
+        return;
+      }
       const isAdmin = radio.value === "admin" && radio.checked;
       document.getElementById("adminView").classList.toggle("hidden", !isAdmin);
       document.getElementById("publicView").classList.toggle("hidden", isAdmin);
@@ -250,5 +358,4 @@ function bindEvents() {
 }
 
 bindEvents();
-renderAdmin();
-renderPublic();
+applySessionRole();

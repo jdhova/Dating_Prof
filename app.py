@@ -77,6 +77,54 @@ def inject_styles() -> None:
                 font-weight: 700;
             }
 
+            .score-pill {
+                background: #ffe9de;
+                color: #812f17;
+                border-radius: 999px;
+                padding: 4px 10px;
+                font-size: 0.82rem;
+                font-weight: 700;
+                border: 1px solid #ffd0be;
+                white-space: nowrap;
+            }
+
+            .public-match-card {
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 14px;
+                background: #ffffff;
+                padding: 10px;
+                margin-bottom: 12px;
+                box-shadow: 0 6px 18px rgba(34, 34, 34, 0.08);
+            }
+
+            .gallery-card {
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 14px;
+                background: #ffffff;
+                padding: 8px 10px 12px 10px;
+                box-shadow: 0 8px 20px rgba(31, 41, 55, 0.08);
+                min-height: 280px;
+            }
+
+            .gallery-title {
+                margin-top: 6px;
+                font-weight: 700;
+                font-size: 1rem;
+            }
+
+            .gallery-meta {
+                margin-top: 2px;
+                color: #4b5563;
+                font-size: 0.83rem;
+            }
+
+            .gallery-bio {
+                margin-top: 6px;
+                font-size: 0.87rem;
+                color: #1f2937;
+                line-height: 1.35;
+            }
+
             /* Keep Streamlit input widgets visually explicit. */
             [data-testid="stTextInput"] input,
             [data-testid="stTextArea"] textarea,
@@ -160,10 +208,62 @@ def profile_to_dict(profile: Profile) -> dict:
     }
 
 
-def render_public_match_card(profile: Profile, rank: int) -> None:
-    photo = str(getattr(profile, "photo_url", "")).strip() or "https://placehold.co/320x220?text=No+Photo"
-    st.markdown(f"##### #{rank} {profile.name}")
-    st.image(photo, use_container_width=True)
+def profile_table_row(profile: Profile) -> dict:
+    return {
+        "name": profile.name,
+        "age": profile.age,
+        "city": profile.city,
+        "likes": ", ".join(sorted(profile.likes)),
+        "bio": profile.bio,
+        "photo": "Yes" if str(getattr(profile, "photo_url", "")).strip() else "No",
+    }
+
+
+def fallback_face(name: str) -> str:
+    seed = (name or "guest").strip().replace(" ", "")
+    return f"https://i.pravatar.cc/420?u={seed}"
+
+
+def profile_photo(profile: Profile) -> str:
+    photo = str(getattr(profile, "photo_url", "")).strip()
+    if photo:
+        return photo
+    return fallback_face(profile.name)
+
+
+def render_public_match_card(profile: Profile, rank: int, score: float) -> None:
+    photo = profile_photo(profile)
+    st.markdown(
+        f"""
+        <div class="public-match-card">
+            <img src="{photo}" alt="{profile.name}" style="width: 100%; border-radius: 12px; margin-bottom: 8px;" />
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <strong>#{rank} {profile.name}</strong>
+                <span class="score-pill">{score * 100:.1f}% match</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_profile_gallery(profiles: list[Profile], *, columns_count: int = 4) -> None:
+    if not profiles:
+        return
+    cols = st.columns(columns_count)
+    for idx, profile in enumerate(profiles):
+        with cols[idx % columns_count]:
+            st.markdown('<div class="gallery-card">', unsafe_allow_html=True)
+            st.image(profile_photo(profile), use_container_width=True)
+            st.markdown(f'<div class="gallery-title">{profile.name}</div>', unsafe_allow_html=True)
+            age_label = str(profile.age) if profile.age is not None else "-"
+            city_label = profile.city or "-"
+            st.markdown(f'<div class="gallery-meta">Age {age_label} | {city_label}</div>', unsafe_allow_html=True)
+            bio = (profile.bio or "No bio added.").strip()
+            if len(bio) > 80:
+                bio = f"{bio[:77]}..."
+            st.markdown(f'<div class="gallery-bio">{bio}</div>', unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
 
 def make_profile(
@@ -412,10 +512,15 @@ def main() -> None:
         if not public_submissions:
             st.info("No public submissions yet.")
         else:
-            st.dataframe(pd.DataFrame([profile_to_dict(p) for p in public_submissions]), use_container_width=True)
+            render_profile_gallery(public_submissions, columns_count=3)
+            with st.expander("View submissions table"):
+                st.dataframe(pd.DataFrame([profile_table_row(p) for p in public_submissions]), use_container_width=True)
 
-        st.markdown("#### All Profiles (Full Info)")
-        st.dataframe(pd.DataFrame([profile_to_dict(p) for p in all_profiles]), use_container_width=True)
+        st.markdown("#### Client Demo: Browse Singles")
+        st.caption("Photo-first profile cards for stakeholder demos.")
+        render_profile_gallery(all_profiles, columns_count=4)
+        with st.expander("View all profiles admin table (optional)"):
+            st.dataframe(pd.DataFrame([profile_table_row(p) for p in all_profiles]), use_container_width=True)
 
         if len(all_profiles) < 2:
             st.warning("Need at least 2 profiles to compute matches.")
@@ -445,7 +550,7 @@ def main() -> None:
                 unsafe_allow_html=True,
             )
         with photo_col:
-            st.image(str(getattr(selected, "photo_url", "")).strip() or "https://placehold.co/320x220?text=No+Photo", use_container_width=True)
+            st.image(profile_photo(selected), use_container_width=True)
 
         admin_results = top_matches(selected, all_profiles, limit=top_k)
         st.markdown(f"#### Top {top_k} Matches (Admin Full View)")
@@ -454,12 +559,15 @@ def main() -> None:
                 f"""
                 <div class="match-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
-                        <div>
-                            <strong>#{rank} {profile.name}</strong><br/>
-                            <span>Age: {profile.age if profile.age is not None else '-'} | City: {profile.city or '-'}</span><br/>
-                            <span>Bio: {profile.bio or '-'}</span>
+                        <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                            <img src="{profile_photo(profile)}" alt="{profile.name}" style="width: 78px; height: 78px; object-fit: cover; border-radius: 10px; border: 1px solid #f2d4c6;" />
+                            <div>
+                                <strong>#{rank} {profile.name}</strong><br/>
+                                <span>Age: {profile.age if profile.age is not None else '-'} | City: {profile.city or '-'}</span><br/>
+                                <span>Bio: {profile.bio or '-'}</span>
+                            </div>
                         </div>
-                        <div class="match-score">Score: {score:.3f}</div>
+                        <div class="match-score">{score * 100:.1f}%</div>
                     </div>
                     <div style="margin-top: 8px;"><strong>Common likes:</strong> {', '.join(sorted(common_likes)) if common_likes else 'None yet'}</div>
                 </div>
@@ -469,7 +577,7 @@ def main() -> None:
 
     else:
         st.subheader("Public Page")
-        st.caption("Privacy mode: only match names and photos are shown publicly.")
+        st.caption("Privacy mode: only match names, photos, and compatibility score are shown publicly.")
 
         with st.form("public_profile_form", clear_on_submit=True):
             public_left, public_right = st.columns(2)
@@ -529,16 +637,16 @@ def main() -> None:
 
         public_results = top_matches(selected_public, all_profiles, limit=top_k)
         st.markdown(f"#### Top {top_k} Public Matches")
-        st.caption("Only names and photos are visible on this page.")
+        st.caption("Only names, photos, and compatibility score are visible on this page.")
 
         if not public_results:
             st.info("No matches available yet.")
             st.stop()
 
         cols = st.columns(3)
-        for idx, (profile, _, _) in enumerate(public_results, start=1):
+        for idx, (profile, score, _) in enumerate(public_results, start=1):
             with cols[(idx - 1) % 3]:
-                render_public_match_card(profile, idx)
+                render_public_match_card(profile, idx, score)
 
 
 if __name__ == "__main__":
