@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dating Match MVP</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="hero">
+      <h1>Dating Match MVP</h1>
+      <p>Admin and Public demo for profile matching</p>
+    </header>
+
+    <section class="panel role-switch">
+      <h2>MVP Role Switch</h2>
+      <div class="toggle-row">
+        <label><input type="radio" name="viewMode" value="admin" checked /> Admin View</label>
+        <label><input type="radio" name="viewMode" value="public" /> Public View</label>
+      </div>
+    </section>
+
+    <section id="adminView" class="panel">
+      <h2>Admin Portal</h2>
+      <p class="muted">Full profile visibility and full match details.</p>
+
+      <div class="grid two">
+        <div class="card">
+          <h3>Admin CSV Upload</h3>
+          <input id="csvUpload" type="file" accept=".csv" />
+          <p class="muted small">If you do not upload, demo data is used.</p>
+        </div>
+        <div class="card">
+          <h3>Match Settings</h3>
+          <label for="topK">Number of matches</label>
+          <input id="topK" type="range" min="1" max="10" value="5" />
+          <p><span id="topKLabel">5</span> matches</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>System Snapshot</h3>
+        <p id="snapshotText"></p>
+      </div>
+
+      <div class="card">
+        <h3>All Profiles (Full Info)</h3>
+        <div class="table-wrap">
+          <table id="allProfilesTable"></table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Public Submissions (Full Info)</h3>
+        <div class="table-wrap">
+          <table id="publicProfilesTable"></table>
+        </div>
+      </div>
+
+      <div class="grid two">
+        <div class="card">
+          <h3>Select Profile</h3>
+          <input id="adminTypedName" type="text" placeholder="Type exact profile name" />
+          <select id="adminProfileSelect"></select>
+        </div>
+        <div class="card" id="selectedProfileCard"></div>
+      </div>
+
+      <div class="card">
+        <h3 id="adminMatchesTitle">Top 5 Matches</h3>
+        <div id="adminMatches"></div>
+      </div>
+    </section>
+
+    <section id="publicView" class="panel hidden">
+      <h2>Public Page</h2>
+      <p class="muted">Only match names and photos are visible publicly.</p>
+
+      <div class="card">
+        <h3>Submit Profile</h3>
+        <form id="publicForm" class="grid two">
+          <div>
+            <label>Name</label>
+            <input name="name" type="text" required />
+            <label>Age</label>
+            <input name="age" type="number" min="18" max="100" value="28" required />
+            <label>City</label>
+            <input name="city" type="text" />
+          </div>
+          <div>
+            <label>Likes (comma separated)</label>
+            <textarea name="likes" rows="4" required></textarea>
+            <label>Bio (optional)</label>
+            <textarea name="bio" rows="3"></textarea>
+            <label>Photo URL (optional)</label>
+            <input name="photo_url" type="url" placeholder="https://..." />
+          </div>
+          <div class="full-row">
+            <button type="submit">Submit Profile</button>
+            <p id="publicFormMsg" class="muted"></p>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Choose Submitted Profile</h3>
+        <select id="publicProfileSelect"></select>
+      </div>
+
+      <div class="card">
+        <h3 id="publicMatchesTitle">Top 5 Public Matches</h3>
+        <div id="publicMatches" class="public-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.web.js"></script>
+</body>
+</html>
